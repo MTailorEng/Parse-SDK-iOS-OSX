@@ -239,6 +239,29 @@ extension Client {
                 else {
                     throw LiveQueryErrors.InvalidResponseError(response: string)
             }
+            
+            var modifiedJson = jsonDecoded
+            // Remove the "original" key if present
+            modifiedJson.removeValue(forKey: "original")
+            
+            if let object = modifiedJson["object"] as? [String: AnyObject] {
+                modifiedJson["object"] = addTypeToObject(object) as AnyObject
+            }
+            
+            guard let response: ServerResponse = try? ServerResponse(json: modifiedJson) else {
+                throw LiveQueryErrors.InvalidResponseError(response: string)
+            }
+            
+            func addTypeToObject(_ object: [String: AnyObject]) -> [String: AnyObject] {
+                var modifiedObject = object
+                for (key, value) in modifiedObject {
+                    if key == "className" && !(value is [String: AnyObject]) {
+                        modifiedObject["__type"] = "Object" as AnyObject
+                        break
+                    }
+                }
+                return modifiedObject
+            }
 
             switch response {
             case .connected:
